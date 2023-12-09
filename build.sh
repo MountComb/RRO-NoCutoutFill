@@ -1,11 +1,21 @@
-mkdir -p DisplayCutoutEmulationInvisibleOverlay/build
-cd DisplayCutoutEmulationInvisibleOverlay/build
+#!/bin/bash
+set -ex
 
-aapt2 compile --dir ../res/ -o res.zip
-aapt2 link --manifest ../AndroidManifest.xml res.zip --warn-manifest-validation -I ../android-31.jar -o linked.apk
+base=$(dirname $0)
+overlay_base=$base/DisplayCutoutEmulationInvisibleOverlay
+module_base=$base/module
+
+aapt2 compile --dir $overlay_base/res/ -o res.zip
+aapt2 link --manifest $overlay_base/AndroidManifest.xml res.zip --warn-manifest-validation -I $overlay_base/android-31.jar -o linked.apk
 zipalign -f 4 linked.apk aligned.apk
 keytool -genkey -keystore keystore.jks -storepass 123456 -keyalg RSA -keysize 2048 -dname 'CN=localhost' -validity 3650
 apksigner sign --ks keystore.jks --ks-pass pass:123456 --out signed.apk aligned.apk
+rm res.zip linked.apk aligned.apk keystore.jks
 
-cd ../..
-
+cp -r $module_base ./
+mkdir -p module/system/product/overlay/DisplayCutoutEmulationInvisible
+cd module
+cp ../signed.apk system/product/overlay/DisplayCutoutEmulationInvisible/DisplayCutoutEmulationInvisibleOverlay.apk
+zip ../module.zip -r .
+cd ..
+rm -r module
